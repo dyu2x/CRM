@@ -1,0 +1,9 @@
+{
+  "name": "Mesina Farms CRM",
+  "description": "Minimalist aquaculture CRM for orders, deliveries, farm registries, and follow-ups with PostgreSQL schema and automated workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "version": "2.07"
+}

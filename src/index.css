@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+
+@keyframes login-scenic-drift {
+  0% { background-position: 48% 50%; background-size: 108% auto; }
+  50% { background-position: 54% 46%; background-size: 114% auto; }
+  100% { background-position: 48% 50%; background-size: 108% auto; }
+}
+.login-scenic-panel { background-color:#080d19; background-repeat:no-repeat; background-position:center; background-size:cover; animation:login-scenic-drift 38s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .login-scenic-panel { animation:none; } }

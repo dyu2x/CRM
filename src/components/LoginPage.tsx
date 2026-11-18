@@ -78,10 +78,6 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Bottom Version */}
-        <div className="text-neutral-600 text-xs font-mono tracking-wider">
-          V2.07
-        </div>
       </div>
 
       {/* Right Column: Clean White Login Card (Matches Screenshot) */}

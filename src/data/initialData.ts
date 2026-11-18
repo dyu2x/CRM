@@ -134,6 +134,9 @@ export const initialRolePermissions: Record<string, string[]> = {
     'farm_maintenance_list',
     'extra_expenses',
   ],
+  Agent: [
+    'dashboard',
+  ],
   Manager: [
     'dashboard',
     'agents',

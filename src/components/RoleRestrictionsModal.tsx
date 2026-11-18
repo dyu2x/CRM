@@ -50,7 +50,7 @@ const allTablesList: { key: TabKey; label: string; desc: string }[] = [
 
 const subTables = [{ parent: 'status_tables' as TabKey, key: 'status_tables:opportunityStatuses', label: 'Opportunity Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:followUpStatuses', label: 'Follow-up Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:followUpMethods', label: 'Follow-up Methods' }, { parent: 'status_tables' as TabKey, key: 'status_tables:deliveryStatuses', label: 'Delivery Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:paymentStatuses', label: 'Payment Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:orderStatuses', label: 'Order Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:paymentMethods', label: 'Payment Methods' }];
 
-const standardRoles = ['Admin', 'Manager', 'Booking Agent', 'Delivery Agent', 'Sales Agent'];
+const standardRoles = ['Admin', 'Manager', 'Agent', 'Booking Agent', 'Delivery Agent', 'Sales Agent'];
 
 export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const { rolePermissions, updateRolePermissions, removeRole, agents, currentUser } = useCRM();
@@ -74,20 +74,20 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, rolePermissions]);
 
-  if (!isOpen || currentUser?.role !== 'Admin') return null;
+  if (!isOpen || currentUser?.!['Admin', 'Agent'].includes(role)) return null;
 
   const activeAllowedTabs = currentPermissions[selectedRole] || [];
 
   const handleCreateRole = () => {
     const name = newRoleName.trim();
-    if (!name || /^(admin|manager)$/i.test(name) || Object.keys(currentPermissions).some((r) => r.toLowerCase() === name.toLowerCase())) return;
+    if (!name || /^(admin|manager|agent)$/i.test(name) || Object.keys(currentPermissions).some((r) => r.toLowerCase() === name.toLowerCase())) return;
     setCurrentPermissions((prev) => ({ ...prev, [name]: ['dashboard'] }));
     setSelectedRole(name);
     setNewRoleName('');
   };
 
   const handleToggleTab = (tabKey: TabKey) => {
-    if (selectedRole === 'Admin') return;
+    if (['Admin', 'Agent'].includes(selectedRole)) return;
     const isAllowed = activeAllowedTabs.includes(tabKey);
     const updated = isAllowed
       ? activeAllowedTabs.filter((k) => k !== tabKey)
@@ -100,7 +100,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   const handleToggleExport = (tableKey: TabKey) => {
-    if (selectedRole === 'Admin') return;
+    if (['Admin', 'Agent'].includes(selectedRole)) return;
     const permissionKey = `export:${tableKey}`;
     const updated = activeAllowedTabs.includes(permissionKey)
       ? activeAllowedTabs.filter((key) => key !== permissionKey)
@@ -109,7 +109,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   const handleToggleSubtable = (subtableKey: string) => {
-    if (selectedRole === 'Admin') return;
+    if (['Admin', 'Agent'].includes(selectedRole)) return;
     const hasGranular = activeAllowedTabs.some((key) => key.startsWith('status_tables:'));
     const baseline = hasGranular ? activeAllowedTabs : [...activeAllowedTabs, ...subTables.map((item) => item.key)];
     const updated = baseline.includes(subtableKey)
@@ -119,7 +119,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   const handleSelectAll = () => {
-    if (selectedRole === 'Admin') return;
+    if (['Admin', 'Agent'].includes(selectedRole)) return;
     setCurrentPermissions({
       ...currentPermissions,
       [selectedRole]: allTablesList.map((t) => t.key),
@@ -127,7 +127,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   const handleDeselectAll = () => {
-    if (selectedRole === 'Admin') return;
+    if (['Admin', 'Agent'].includes(selectedRole)) return;
     setCurrentPermissions({
       ...currentPermissions,
       [selectedRole]: ['dashboard'],
@@ -135,7 +135,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   const handleResetDefaults = () => {
-    if (selectedRole === 'Admin') return;
+    if (['Admin', 'Agent'].includes(selectedRole)) return;
     const defaultsForRole = initialRolePermissions[selectedRole] || ['dashboard'];
     setCurrentPermissions({
       ...currentPermissions,
@@ -146,7 +146,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const handleSaveAll = (e: React.FormEvent) => {
     e.preventDefault();
     Object.keys(currentPermissions).forEach((role) => {
-      if (role !== 'Admin') updateRolePermissions(role, currentPermissions[role]);
+      if (!['Admin', 'Agent'].includes(role)) updateRolePermissions(role, currentPermissions[role]);
     });
     setSuccessMessage(true);
     setTimeout(() => {
@@ -169,7 +169,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 Role Permissions &amp; Table Access Restrictions
               </h3>
               <p className="text-xs text-neutral-400">
-                Configure table access and export permissions for each role &bull; <span className="font-mono text-neutral-300">V2.07</span>
+                Configure table access and export permissions for each role &bull; <span className="font-mono text-neutral-300">V2.08</span>
               </p>
             </div>
           </div>
@@ -207,7 +207,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={handleSelectAll}
-              disabled={selectedRole === 'Admin'}
+              disabled={['Admin', 'Agent'].includes(selectedRole)}
               className="text-[11px] text-neutral-600 hover:text-black font-medium underline"
             >
               Grant All
@@ -216,7 +216,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={handleDeselectAll}
-              disabled={selectedRole === 'Admin'}
+              disabled={['Admin', 'Agent'].includes(selectedRole)}
               className="text-[11px] text-neutral-600 hover:text-black font-medium underline"
             >
               Only Dashboard
@@ -225,7 +225,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={handleResetDefaults}
-              disabled={selectedRole === 'Admin'}
+              disabled={['Admin', 'Agent'].includes(selectedRole)}
               className="text-[11px] text-neutral-600 hover:text-black font-medium underline flex items-center gap-1"
             >
               <RotateCcw className="w-3 h-3" />
@@ -235,9 +235,9 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {canManageRoles && <div className="px-6 py-3 border-b border-neutral-200 flex flex-wrap items-center gap-2">
-          <input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="New role name (Admin and Manager are reserved)" className="border border-neutral-300 rounded px-3 py-2 text-xs" maxLength={60} />
+          <input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} placeholder="New role name (Admin, Manager and Agent are reserved)" className="border border-neutral-300 rounded px-3 py-2 text-xs" maxLength={60} />
           <button type="button" onClick={handleCreateRole} disabled={!newRoleName.trim() || /^(admin|manager)$/i.test(newRoleName.trim()) || Object.keys(currentPermissions).some((r) => r.toLowerCase() === newRoleName.trim().toLowerCase())} className="px-3 py-2 rounded bg-neutral-900 text-white text-xs font-semibold disabled:opacity-40">Create role</button>
-          <span className="text-[11px] text-neutral-500">Only Admin can create and configure roles. Admin and Manager are reserved system roles.</span>
+          <span className="text-[11px] text-neutral-500">Only Admin can create and configure roles. Admin, Manager and Agent are reserved system roles.</span>
         </div>}
 
         {/* Content Table / Checklist */}
@@ -289,7 +289,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         {isChecked ? 'Access Granted' : 'Restricted'}
                       </span>
                       {tbl.key !== 'dashboard' && <label className="inline-flex items-center gap-1.5 text-[10px] text-neutral-600 cursor-pointer" onClick={(event) => event.stopPropagation()}>
-                        <input type="checkbox" aria-label={`Allow ${tbl.label} data export`} checked={selectedRole === 'Admin' || activeAllowedTabs.includes(`export:${tbl.key}`)} disabled={selectedRole === 'Admin'} onChange={() => handleToggleExport(tbl.key)} />
+                        <input type="checkbox" aria-label={`Allow ${tbl.label} data export`} checked={selectedRole === 'Admin' || activeAllowedTabs.includes(`export:${tbl.key}`)} disabled={['Admin', 'Agent'].includes(selectedRole)} onChange={() => handleToggleExport(tbl.key)} />
                         Allow export
                       </label>}
                     </div>
@@ -303,7 +303,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     const permissionKey = `overview:${key}`;
                     const hasAny = activeAllowedTabs.some(value => value.startsWith('overview:'));
                     const checked = hasAny ? activeAllowedTabs.includes(permissionKey) : true;
-                    return <label key={key} className="flex items-center gap-2 pl-2 text-xs text-neutral-700"><input type="checkbox" checked={checked} disabled={selectedRole === 'Admin'} onChange={() => { const base = hasAny ? activeAllowedTabs : [...activeAllowedTabs, ...['kpis','workflow','followups','audit'].map(v => `overview:${v}`)]; const next = base.includes(permissionKey) ? base.filter(v => v !== permissionKey) : [...base, permissionKey]; setCurrentPermissions({...currentPermissions,[selectedRole]:next}); }} />{label}</label>;
+                    return <label key={key} className="flex items-center gap-2 pl-2 text-xs text-neutral-700"><input type="checkbox" checked={checked} disabled={['Admin', 'Agent'].includes(selectedRole)} onChange={() => { const base = hasAny ? activeAllowedTabs : [...activeAllowedTabs, ...['kpis','workflow','followups','audit'].map(v => `overview:${v}`)]; const next = base.includes(permissionKey) ? base.filter(v => v !== permissionKey) : [...base, permissionKey]; setCurrentPermissions({...currentPermissions,[selectedRole]:next}); }} />{label}</label>;
                   })}
                   <p className="text-[10px] text-neutral-500">When no section-specific restrictions are set, all overview sections are visible to roles with dashboard access.</p>
                 </div>
@@ -313,7 +313,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <div className="text-xs font-semibold text-neutral-700">Status & Lookup subcategories — independently viewable tables</div>
                   {subTables.map((item) => (
                     <label key={item.key} className="flex items-center gap-2 pl-5 text-xs text-neutral-700">
-                      <input type="checkbox" checked={activeAllowedTabs.some((key) => key.startsWith('status_tables:')) ? activeAllowedTabs.includes(item.key) : true} disabled={selectedRole === 'Admin'} onChange={() => handleToggleSubtable(item.key)} />
+                      <input type="checkbox" checked={activeAllowedTabs.some((key) => key.startsWith('status_tables:')) ? activeAllowedTabs.includes(item.key) : true} disabled={['Admin', 'Agent'].includes(selectedRole)} onChange={() => handleToggleSubtable(item.key)} />
                       {item.label}
                     </label>
                   ))}

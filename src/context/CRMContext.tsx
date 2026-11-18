@@ -113,6 +113,7 @@ interface CRMContextType {
   rolePermissions: Record<string, string[]>;
   updateRolePermissions: (role: string, allowedTabs: string[]) => void;
   removeRole: (role: string) => void;
+  renameRole: (oldRole: string, newRole: string) => boolean;
 
   // Mutators & Automations
   addContactPerson: (contact: Omit<ContactPerson, 'contact_id' | 'date_created'>) => void;
@@ -257,7 +258,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Role permissions configuration
   const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>(
-    initial.rolePermissions || initialRolePermissions
+    { ...initialRolePermissions, ...(initial.rolePermissions || {}) }
   );
   const [overviewVisibilityByUser, setOverviewVisibilityByUser] = useState<Record<string, string[]>>(initial.overviewVisibility && !Array.isArray(initial.overviewVisibility) ? initial.overviewVisibility : {});
 
@@ -1371,9 +1372,35 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const renameRole = (oldRole: string, newRole: string): boolean => {
+    const nextName = String(newRole || '').trim();
+    if (!oldRole || !nextName || ['admin', 'manager', 'agent'].includes(oldRole.trim().toLowerCase())) return false;
+    if (['admin', 'manager', 'agent'].includes(nextName.toLowerCase())) return false;
+    if (Object.keys(rolePermissions).some((role) => role.toLowerCase() === nextName.toLowerCase() && role !== oldRole)) return false;
+    const permissions = rolePermissions[oldRole];
+    if (!permissions) return false;
+    setRolePermissions((prev) => { const next = { ...prev }; delete next[oldRole]; next[nextName] = permissions; return next; });
+    setAgents((prev) => prev.map((agent) => agent.role === oldRole ? { ...agent, role: nextName } : agent));
+    if (currentUser?.role === oldRole) {
+      const updatedUser = { ...currentUser, role: nextName };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('mesina_crm_user', JSON.stringify(updatedUser));
+    }
+    logHistory('roles', 'role_name', oldRole, nextName, 'UPDATE');
+    return true;
+  };
+
   const removeRole = (role: string) => {
-    if (['admin', 'manager'].includes(String(role || '').trim().toLowerCase()) || agents.some((agent) => agent.role === role)) return;
-    setRolePermissions((prev) => { const next = { ...prev }; delete next[role]; return next; });
+    if (['admin', 'manager', 'agent'].includes(String(role || '').trim().toLowerCase())) return;
+    const fallbackRole = 'Agent';
+    setRolePermissions((prev) => { const next = { ...prev }; delete next[role]; if (!next[fallbackRole]) next[fallbackRole] = initialRolePermissions.Agent || ['dashboard']; return next; });
+    setAgents((prev) => prev.map((agent) => agent.role === role ? { ...agent, role: fallbackRole } : agent));
+    if (currentUser?.role === role) {
+      const updatedUser = { ...currentUser, role: fallbackRole };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('mesina_crm_user', JSON.stringify(updatedUser));
+    }
+    logHistory('roles', 'role_name', role, 'Agent', 'UPDATE');
   };
 
   // Export / Import Backup (Admin only)
@@ -1533,6 +1560,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         rolePermissions,
         updateRolePermissions,
         removeRole,
+        renameRole,
         editStatusItem,
         addStatusItem,
         deleteStatusItem,

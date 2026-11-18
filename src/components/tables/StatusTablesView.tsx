@@ -108,6 +108,7 @@ export const StatusTablesView: React.FC = () => {
     agents,
     updateRolePermissions,
     removeRole,
+    renameRole,
   } = useCRM();
 
   const [activeTab, setActiveTab] = useState<ActiveStatusTab>('opportunity_statuses');
@@ -132,21 +133,21 @@ export const StatusTablesView: React.FC = () => {
   });
 
   if (showRoles) {
-    const roles = Object.keys(rolePermissions).sort((a, b) => a.localeCompare(b));
+    const roles = Array.from(new Set([...Object.keys(rolePermissions), 'Agent'])).sort((a, b) => a.localeCompare(b));
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-neutral-900 p-4 text-white">
           <div><div className="flex items-center gap-2 text-sm font-bold"><Shield className="h-4 w-4"/> Roles</div><p className="mt-1 text-xs text-neutral-300">Manage assignable roles. Configure page and table restrictions in Admin Settings.</p></div>
           <button onClick={() => setShowRoles(false)} className="rounded border border-neutral-600 px-3 py-2 text-xs hover:bg-neutral-800">Back to Status &amp; Lookup</button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); const name = newRoleName.trim(); if (!name || roles.some(r => r.toLowerCase() === name.toLowerCase())) return; updateRolePermissions(name, ['dashboard']); setNewRoleName(''); }} className="flex flex-wrap gap-2 rounded-lg border border-neutral-200 bg-white p-4">
-          <input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name" className="min-w-56 flex-1 rounded border border-neutral-300 px-3 py-2 text-xs" />
+        <form onSubmit={(e) => { e.preventDefault(); const name = newRoleName.trim(); if (!name || /^(admin|manager|agent)$/i.test(name) || roles.some(r => r.toLowerCase() === name.toLowerCase())) return; updateRolePermissions(name, ['dashboard']); setNewRoleName(''); }} className="flex flex-wrap gap-2 rounded-lg border border-neutral-200 bg-white p-4">
+          <input value={newRoleName} onChange={e => setNewRoleName(e.target.value)} placeholder="New role name (Agent is reserved)" className="min-w-56 flex-1 rounded border border-neutral-300 px-3 py-2 text-xs" />
           <button type="submit" disabled={!newRoleName.trim()} className="rounded bg-neutral-900 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">Add Role</button>
         </form>
         <div className="flex justify-end"><ExportDataButton tableKey="roles" tableLabel="CRM Roles" rows={roles.map((role) => ({ name: role, description: ({ 'Admin': 'Full CRM administration access', 'Booking Agent': 'Booking and inquiry management', 'Delivery Agent': 'Delivery and fulfillment operations', 'Sales Agent': 'Sales and customer management' } as Record<string, string>)[role] || 'Custom CRM role', assigned_users: agents.filter((agent) => agent.role === role).length }))} /></div>
         <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
           <table className="w-full text-left text-xs"><thead className="bg-neutral-50 text-neutral-600"><tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Description</th><th className="px-4 py-3">Assigned users</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
-            <tbody className="divide-y divide-neutral-100">{roles.map((role) => <tr key={role}><td className="px-4 py-3 font-semibold">{role}</td><td className="px-4 py-3 text-neutral-500">{({ 'Admin': 'Full CRM administration access', 'Booking Agent': 'Booking and inquiry management', 'Delivery Agent': 'Delivery and fulfillment operations', 'Sales Agent': 'Sales and customer management' } as Record<string, string>)[role] || 'Custom CRM role'}</td><td className="px-4 py-3">{agents.filter(a => a.role === role).length}</td><td className="px-4 py-3 text-right"><button disabled={role === 'Admin' || agents.some(a => a.role === role)} onClick={() => { if (window.confirm(`Delete role ${role}?`)) removeRole(role); }} className="rounded border border-red-200 px-2.5 py-1.5 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30">Delete</button></td></tr>)}</tbody>
+            <tbody className="divide-y divide-neutral-100">{roles.map((role) => <tr key={role}><td className="px-4 py-3 font-semibold">{role}</td><td className="px-4 py-3 text-neutral-500">{({ 'Admin': 'Full CRM administration access', 'Booking Agent': 'Booking and inquiry management', 'Delivery Agent': 'Delivery and fulfillment operations', 'Sales Agent': 'Sales and customer management' } as Record<string, string>)[role] || 'Custom CRM role'}</td><td className="px-4 py-3">{agents.filter(a => a.role === role).length}</td><td className="px-4 py-3 text-right whitespace-nowrap"><button disabled={['Admin','Manager','Agent'].includes(role)} onClick={() => { const nextName = window.prompt(`Rename role "${role}" to:`, role); if (nextName && nextName.trim() !== role) { if (!renameRole(role, nextName)) window.alert('Role name is invalid or already exists.'); } }} className="mr-2 rounded border border-neutral-300 px-2.5 py-1.5 text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-30">Rename</button><button disabled={['Admin','Manager','Agent'].includes(role)} onClick={() => { if (window.confirm(`Delete role ${role}? Assigned agents will be moved to Agent.`)) removeRole(role); }} className="rounded border border-red-200 px-2.5 py-1.5 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30">Delete</button></td></tr>)}</tbody>
           </table>
         </div>
       </div>

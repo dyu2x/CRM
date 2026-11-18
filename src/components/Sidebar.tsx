@@ -7,7 +7,6 @@ import {
   PhoneCall,
   FileSpreadsheet,
   Truck,
-  PhilippinePeso,
   Compass,
   Users,
   Fish,
@@ -113,10 +112,30 @@ export const Sidebar: React.FC<Props> = ({
   };
   const renderNavIcon = (key: string, fallback: React.ReactNode) => {
     const config = branding.table_icon_config?.[key];
-    const iconName = config?.icon === 'DollarSign' ? 'PhilippinePeso' : (config?.icon || defaultIconNames[key]);
+    // Salaries and Obligations are monetary sections: always use the Philippine peso icon,
+    // including when an older saved branding configuration still contains DollarSign.
+    const isPesoSection = key === 'salaries' || key === 'obligations';
+    // Use the literal Unicode currency character for these two expense entries.
+    // The Lucide PhilippinePeso artwork can resemble a dollar sign at sidebar size.
+    if (isPesoSection) {
+      return (
+        <span
+          className="nav-table-icon inline-flex w-4 h-4 shrink-0 items-center justify-center text-[17px] font-semibold leading-none"
+          style={config?.color ? { color: config.color } : undefined}
+          aria-label="Philippine peso"
+        >
+          ₱
+        </span>
+      );
+    }
+    const iconName = config?.icon === 'DollarSign'
+      ? 'PhilippinePeso'
+      : (config?.icon || defaultIconNames[key]);
     const IconComponent = (LucideIcons as any)[iconName];
-    if (!IconComponent) return fallback;
-    return <IconComponent className="w-4 h-4 shrink-0 transition-transform duration-200 hover:-translate-y-0.5 hover:scale-110" style={config?.color ? { color: config.color } : undefined} />;
+    const icon = IconComponent
+      ? <IconComponent className="w-4 h-4 shrink-0" style={config?.color ? { color: config.color } : undefined} />
+      : fallback;
+    return <span className="nav-table-icon inline-flex w-4 h-4 shrink-0 items-center justify-center" aria-hidden="true">{icon}</span>;
   };
 
   return (

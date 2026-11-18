@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import { spawn } from 'node:child_process';
 import { paginateRecords, buildFinancialReconciliation } from './src/utils/serverData.mjs';
 
 const { Pool } = pg;
@@ -337,28 +338,51 @@ app.get('/api/backup.sql', auth, async (req,res) => {
     const state = await getState();
     if (!state) return res.status(404).json({error:'No CRM data is available to export'});
     const encoded = Buffer.from(JSON.stringify(state), 'utf8').toString('base64');
-    const sqlLiteral = value => `'${String(value).replace(/'/g, "''")}'`;
-    const mirrorSql = [];
-    for (const key of mirroredCollections) {
-      const rows = Array.isArray(state?.[key]) ? state[key] : [];
-      rows.forEach((row, index) => {
-        const idField = Object.keys(row || {}).find(k => /(^id$|_id$)/i.test(k));
-        const recordKey = String(idField && row[idField] != null ? row[idField] : index+1);
-        const rowBase64 = Buffer.from(JSON.stringify(row || {}), 'utf8').toString('base64');
-        mirrorSql.push(`INSERT INTO crm_state_records(table_name,record_key,data) VALUES (${sqlLiteral(key)},${sqlLiteral(recordKey)},convert_from(decode('${rowBase64}','base64'),'UTF8')::jsonb);`);
-      });
-    }
-    const sql = `-- Mesina Farms CRM PostgreSQL data backup\n-- Import with pgAdmin Query Tool or the CRM Admin backup importer.\n-- MESINA_CRM_STATE_BASE64:${encoded}\nBEGIN;\nCREATE TABLE IF NOT EXISTS crm_state_records (table_name varchar(80) NOT NULL, record_key text NOT NULL, data jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(table_name,record_key));\nINSERT INTO crm_state(id,state,updated_at) VALUES (1, convert_from(decode('${encoded}','base64'),'UTF8')::jsonb, now()) ON CONFLICT(id) DO UPDATE SET state=EXCLUDED.state, updated_at=now();\nDELETE FROM crm_state_records;\n${mirrorSql.join('\n')}\nCOMMIT;\n`;
     const exportId = crypto.randomUUID();
-    // Only the most recent completed export may authorize one truncate operation.
+
+    // A real PostgreSQL dump is required here: exporting only crm_state does not
+    // back up the normalized tables that administrators inspect in pgAdmin.
+    // Invalidate older confirmations, then create this export's confirmation row.
     await pool.query('UPDATE crm_backup_exports SET consumed_at=now() WHERE admin_agent_id=$1 AND consumed_at IS NULL',[req.user.agent_id]);
     await pool.query('INSERT INTO crm_backup_exports(export_id,admin_agent_id) VALUES($1,$2)',[exportId,req.user.agent_id]);
+
+    const pgDumpArgs = [
+      '--host', process.env.PGHOST || 'db',
+      '--port', String(process.env.PGPORT || 5432),
+      '--username', process.env.PGUSER || process.env.POSTGRES_USER || 'crm_user',
+      '--dbname', process.env.PGDATABASE || process.env.POSTGRES_DB || 'mesina_crm',
+      '--format=plain', '--encoding=UTF8', '--no-owner', '--no-privileges',
+    ];
+    const dump = await new Promise((resolve, reject) => {
+      const child = spawn('pg_dump', pgDumpArgs, {
+        env: { ...process.env, PGPASSWORD: process.env.PGPASSWORD ?? process.env.POSTGRES_PASSWORD ?? '' },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const stdout = [];
+      const stderr = [];
+      child.stdout.on('data', chunk => stdout.push(chunk));
+      child.stderr.on('data', chunk => stderr.push(chunk));
+      child.on('error', error => reject(new Error(`PostgreSQL dump utility could not start: ${error.message}`)));
+      child.on('close', code => {
+        if (code !== 0) return reject(new Error(`pg_dump exited with code ${code}: ${Buffer.concat(stderr).toString('utf8').trim()}`));
+        resolve(Buffer.concat(stdout).toString('utf8'));
+      });
+    });
+    if (!dump.trim()) throw new Error('pg_dump returned an empty database backup.');
+
+    // Keep the state marker for the CRM's in-app restore flow while including
+    // the complete schema and row data for pgAdmin/psql restoration.
+    const sql = `-- Mesina Farms CRM complete PostgreSQL backup\n-- Restore into an empty database with pgAdmin Query Tool or psql.\n-- MESINA_CRM_STATE_BASE64:${encoded}\n\n${dump}`;
     res.setHeader('X-CRM-Backup-Export-Id',exportId);
     res.setHeader('Access-Control-Expose-Headers','X-CRM-Backup-Export-Id');
     res.setHeader('Content-Type','application/sql; charset=utf-8');
     res.setHeader('Content-Disposition',`attachment; filename=mesina_crm_backup_${new Date().toISOString().slice(0,10)}.sql`);
     res.send(sql);
-  } catch (error) { console.error('SQL export failed:',error); res.status(500).json({error:'Unable to create SQL backup'}); }
+  } catch (error) {
+    console.error('SQL export failed:',error);
+    if (!res.headersSent) res.status(500).json({error:error?.message || 'Unable to create SQL backup'});
+    else res.destroy(error);
+  }
 });
 
 // Server-side pagination/search API for gradually moving large tables away from full-state downloads.

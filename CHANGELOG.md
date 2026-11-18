@@ -44,3 +44,8 @@
 - Kept locally-created roles in the access-restrictions editor until saved, then persisted them through the shared role-permissions state.
 - Added the reserved `Agent` role to the normalized PostgreSQL `roles` master table seed/reconciliation.
 \n## v2.08.3 - Post-login blank screen hotfix\n- Fixed a runtime ReferenceError in the sidebar caused by two references to an undefined `PhilippinePeso` component. Replaced those icon elements with the literal Philippine peso symbol, matching the existing navigation rendering approach.\n
+## v2.08.4 - Complete PostgreSQL SQL export
+- Replaced the partial CRM-state-only SQL export with a full `pg_dump` of the connected PostgreSQL database, including schema and normalized table data.
+- Added the PostgreSQL 16 client to the runtime image so the export endpoint can execute `pg_dump`.
+- Preserved the embedded CRM-state marker so the existing in-app restore flow remains compatible.
+- SQL backups are intended to be restored into an empty database using pgAdmin Query Tool or `psql`.

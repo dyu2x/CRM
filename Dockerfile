@@ -11,6 +11,9 @@ RUN npm run build
 FROM node:22-alpine AS runtime
 WORKDIR /app
 
+# Provide pg_dump so the Admin SQL export contains the complete PostgreSQL database.
+RUN apk add --no-cache postgresql16-client
+
 ENV NODE_ENV=production PORT=3000
 
 # Create the application user first

@@ -74,7 +74,7 @@ export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, rolePermissions]);
 
-  if (!isOpen || currentUser?.!['Admin', 'Agent'].includes(role)) return null;
+  if (!isOpen) return null;
 
   const activeAllowedTabs = currentPermissions[selectedRole] || [];
 

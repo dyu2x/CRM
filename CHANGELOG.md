@@ -43,3 +43,4 @@
 - Prevented deleted or renamed roles from reappearing in the agent role dropdown merely because an old agent record still contains that role.
 - Kept locally-created roles in the access-restrictions editor until saved, then persisted them through the shared role-permissions state.
 - Added the reserved `Agent` role to the normalized PostgreSQL `roles` master table seed/reconciliation.
+\n## v2.08.3 - Post-login blank screen hotfix\n- Fixed a runtime ReferenceError in the sidebar caused by two references to an undefined `PhilippinePeso` component. Replaced those icon elements with the literal Philippine peso symbol, matching the existing navigation rendering approach.\n

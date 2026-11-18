@@ -36,3 +36,7 @@
 - `node --test tests/serverData.test.mjs`: 3 tests passed.
 - Full TypeScript type-check and production build could not be run in the packaging environment because dependency installation did not complete.
 - PostgreSQL schema execution and Docker integration tests could not be run because `psql` and Docker are not installed in the packaging environment.
+
+## 2.08.1 - Post-login blank page fix
+- Fixed an undefined `PhilippinePeso` React component reference in the sidebar expense navigation.
+- Replaced the two sidebar currency icons with the existing Philippine peso text treatment so the sidebar can render immediately after authentication.

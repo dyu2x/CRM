@@ -37,6 +37,9 @@
 - Full TypeScript type-check and production build could not be run in the packaging environment because dependency installation did not complete.
 - PostgreSQL schema execution and Docker integration tests could not be run because `psql` and Docker are not installed in the packaging environment.
 
-## 2.08.1 - Post-login blank page fix
-- Fixed an undefined `PhilippinePeso` React component reference in the sidebar expense navigation.
-- Replaced the two sidebar currency icons with the existing Philippine peso text treatment so the sidebar can render immediately after authentication.
+
+## v2.08.2 — Role list synchronization
+- Made `crm_state.rolePermissions` the canonical source for assignable roles across Status & Lookups, Agents, and Manage Access Restrictions.
+- Prevented deleted or renamed roles from reappearing in the agent role dropdown merely because an old agent record still contains that role.
+- Kept locally-created roles in the access-restrictions editor until saved, then persisted them through the shared role-permissions state.
+- Added the reserved `Agent` role to the normalized PostgreSQL `roles` master table seed/reconciliation.

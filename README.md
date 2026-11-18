@@ -140,3 +140,7 @@ This mirror is deliberately separate from the older normalized operational table
 - A confirmed export is single-use for truncation; after a successful truncate, another SQL export is required.
 - Removed the PostgreSQL badge from the top-left brand area and updated release labels to 2.07.
 - Added `crm_backup_exports` to the single fresh-install SQL schema.
+
+### Role synchronization (v2.08.2)
+
+`crm_state.rolePermissions` is the canonical role registry used by Status & Lookups → Roles, Agents → Add/Edit Agent → System Role, and Settings → Manage Access Restrictions. Create, rename, or delete roles from the Roles screen; the agent role selectors and access-restrictions editor read from that same registry. Access permissions remain attached to each role in `rolePermissions`.

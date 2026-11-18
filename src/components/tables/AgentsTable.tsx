@@ -11,8 +11,11 @@ export const AgentsTable: React.FC = () => {
   const isManager = String(currentUser?.role || '').trim().toLowerCase() === 'manager';
   const isProtectedRole = (value: string) => ['admin', 'manager'].includes(String(value || '').trim().toLowerCase());
   const canManageAgents = isAdmin || isManager;
-  const availableRoles = Array.from(new Set(['Booking Agent', 'Delivery Agent', 'Sales Agent', ...Object.keys(rolePermissions), ...agents.map((a) => a.role), ...(isAdmin ? ['Admin', 'Manager'] : [])]))
-    .filter((value) => isAdmin || !isProtectedRole(value));
+  // rolePermissions is the single source of truth for assignable roles.
+  // Do not resurrect deleted/renamed roles from old agent records.
+  const availableRoles = Object.keys(rolePermissions)
+    .filter((value) => isAdmin || !isProtectedRole(value))
+    .sort((a, b) => a.localeCompare(b));
   const visibleAgents = isManager ? agents.filter((agent) => !isProtectedRole(agent.role)) : agents;
 
   // Search & Filter

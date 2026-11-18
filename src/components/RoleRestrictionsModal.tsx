@@ -50,15 +50,15 @@ const allTablesList: { key: TabKey; label: string; desc: string }[] = [
 
 const subTables = [{ parent: 'status_tables' as TabKey, key: 'status_tables:opportunityStatuses', label: 'Opportunity Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:followUpStatuses', label: 'Follow-up Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:followUpMethods', label: 'Follow-up Methods' }, { parent: 'status_tables' as TabKey, key: 'status_tables:deliveryStatuses', label: 'Delivery Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:paymentStatuses', label: 'Payment Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:orderStatuses', label: 'Order Statuses' }, { parent: 'status_tables' as TabKey, key: 'status_tables:paymentMethods', label: 'Payment Methods' }];
 
-const standardRoles = ['Admin', 'Manager', 'Agent', 'Booking Agent', 'Delivery Agent', 'Sales Agent'];
+const protectedSystemRoles = ['Admin', 'Manager', 'Agent'];
 
 export const RoleRestrictionsModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { rolePermissions, updateRolePermissions, removeRole, agents, currentUser } = useCRM();
+  const { rolePermissions, updateRolePermissions, removeRole, currentUser } = useCRM();
 
   const [currentPermissions, setCurrentPermissions] = useState<Record<string, string[]>>(rolePermissions);
   // Combine standard roles with configured and assigned custom roles.
   const availableRoles = Array.from(
-    new Set([...standardRoles, ...Object.keys(rolePermissions), ...Object.keys(currentPermissions), ...agents.map((a) => a.role)])
+    new Set([...protectedSystemRoles.filter((role) => rolePermissions[role]), ...Object.keys(rolePermissions), ...Object.keys(currentPermissions)])
   );
 
   const [selectedRole, setSelectedRole] = useState<string>(availableRoles[1] || 'Booking Agent');

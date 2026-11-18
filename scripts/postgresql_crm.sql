@@ -90,6 +90,7 @@ CREATE TABLE roles (
 
 INSERT INTO roles (name, description, is_system) VALUES
     ('Admin', 'Full CRM superuser access', TRUE),
+    ('Agent', 'Basic CRM dashboard access', TRUE),
     ('Manager', 'Manage ordinary agent accounts; no administrative access', TRUE),
     ('Booking Agent', 'Booking and inquiry management', TRUE),
     ('Delivery Agent', 'Delivery and fulfillment operations', TRUE),

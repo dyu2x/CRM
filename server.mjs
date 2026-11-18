@@ -65,6 +65,8 @@ async function init() {
     } finally { syncClient.release(); }
   }
   const savedRoleNames = Object.keys(savedState.rows[0]?.state?.rolePermissions || {});
+  // Ensure reserved baseline roles exist in the normalized roles table too.
+  if (!savedRoleNames.some((name) => name.toLowerCase() === 'agent')) savedRoleNames.push('Agent');
   for (const roleName of savedRoleNames) {
     const cleanName = String(roleName).trim();
     if (cleanName) await pool.query('INSERT INTO roles(name) VALUES($1) ON CONFLICT(name) DO NOTHING',[cleanName]);
